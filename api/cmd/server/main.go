@@ -3,8 +3,10 @@ package main
 import (
 	"BookShop/internal/db"
 	"BookShop/internal/handler"
+	"BookShop/internal/middleware"
 	"BookShop/internal/repository/postgres"
 	"BookShop/internal/service"
+	"BookShop/internal/session"
 	"log"
 	"net/http"
 
@@ -17,15 +19,21 @@ func main() {
 	cfg := config.Load()
 
 	conn, err := db.PostgresDB(cfg)
+	redisClient, err := db.Redis(cfg)
+
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect: %v", err)
 	}
+	sessionManager := session.NewManager(redisClient)
 
 	bookRepo := postgres.InitBookRepository(conn)
 	bookService := service.InitBookService(bookRepo)
 	bookHandler := handler.InitBookHandler(bookService)
 
 	mux := chi.NewRouter()
+
+	mux.Use(middleware.Session(sessionManager))
+
 	handler.RegisterRoutes(mux, bookHandler)
 
 	log.Printf("Server starting on :%s", cfg.Port)

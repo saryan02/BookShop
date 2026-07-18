@@ -87,8 +87,22 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       SEED_ENV: mock
     entrypoint: [ "/bin/sh", "/entrypoint.sh" ]
-    command: |
-     
+
+  redis:
+    image: 'redis:alpine'
+    expose:
+      - '6379'
+    volumes:
+      - 'project-redis:/data'
+    healthcheck:
+        test:
+            - CMD
+            - redis-cli
+            - ping
+        retries: 3
+        timeout: 5s
 
 volumes:
+  project-redis:
+    driver: local
   postgres_data:
